@@ -3,8 +3,7 @@ module Jekyll
     attr_accessor :config, :layouts, :posts, :pages, :static_files,
                   :exclude, :include, :source, :dest, :lsi, :highlighter,
                   :permalink_style, :time, :future, :safe, :plugins, :limit_posts,
-                  :show_drafts, :keep_files, :baseurl, :data, :file_read_opts, :gems,
-                  :collections
+                  :show_drafts, :keep_files, :baseurl, :data, :file_read_opts, :gems
 
     attr_accessor :converters, :generators
 
@@ -14,13 +13,13 @@ module Jekyll
     def initialize(config)
       self.config = config.clone
 
-      %w[safe lsi highlighter baseurl exclude include future show_drafts limit_posts keep_files gems collections].each do |opt|
+      %w[safe lsi highlighter baseurl exclude include future show_drafts limit_posts keep_files gems].each do |opt|
         self.send("#{opt}=", config[opt])
       end
 
-      self.source = File.expand_path(config['source'])
-      self.dest = File.expand_path(config['destination'])
-      self.plugins = plugins_path
+      self.source          = File.expand_path(config['source'])
+      self.dest            = File.expand_path(config['destination'])
+      self.plugins         = plugins_path
       self.permalink_style = config['permalink'].to_sym
 
       self.file_read_opts = {}
@@ -115,6 +114,14 @@ module Jekyll
         [File.join(source, config['plugins'])]
       else
         Array(config['plugins']).map { |d| File.expand_path(d) }
+      end
+    end
+
+    def collections
+      @collections ||= if config['collections']
+        Hash[config['collections'].map { |coll| [coll, Jekyll::Collection.new(self, coll)] } ]
+      else
+        Hash.new
       end
     end
 
@@ -222,7 +229,6 @@ module Jekyll
     # Returns nothing.
     def read_collections
       if collections
-        self.collections = Hash[collections.map { |coll| [coll, Jekyll::Collection.new(self, coll)] } ]
         collections.each { |_, collection| collection.read }
       end
     end
@@ -241,6 +247,14 @@ module Jekyll
     # Returns nothing.
     def render
       relative_permalinks_deprecation_method
+
+      if collections
+        collections.each do |label, collection|
+          collection.docs.each do |document|
+            document.output = Jekyll::Renderer.new(self, document).run
+          end
+        end
+      end
 
       payload = site_payload
       [posts, pages].flatten.each do |page_or_post|
@@ -404,8 +418,20 @@ module Jekyll
       end
     end
 
+    def documents
+      docs = Set.new
+      if collections
+        collections.each do |label, coll|
+          if config['render'].include?(label)
+            docs = docs.merge(coll.docs)
+          end
+        end
+      end
+      docs
+    end
+
     def each_site_file
-      %w(posts pages static_files).each do |type|
+      %w(posts pages static_files documents).each do |type|
         send(type).each do |item|
           yield item
         end

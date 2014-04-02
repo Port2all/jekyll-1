@@ -125,7 +125,7 @@ module Jekyll
       end
     end
 
-    def render
+    def to_render
       config['render'] || Array.new
     end
 
@@ -232,9 +232,7 @@ module Jekyll
     #
     # Returns nothing.
     def read_collections
-      if collections
-        collections.each { |_, collection| collection.read }
-      end
+      collections.each { |_, collection| collection.read }
     end
 
     # Run each of the Generators.
@@ -252,11 +250,9 @@ module Jekyll
     def render
       relative_permalinks_deprecation_method
 
-      if collections
-        collections.each do |label, collection|
-          collection.docs.each do |document|
-            document.output = Jekyll::Renderer.new(self, document).run
-          end
+      collections.each do |label, collection|
+        collection.docs.each do |document|
+          document.output = Jekyll::Renderer.new(self, document).run
         end
       end
 
@@ -424,11 +420,9 @@ module Jekyll
 
     def documents
       docs = Set.new
-      if collections
-        collections.each do |label, coll|
-          if render.include?(label)
-            docs = docs.merge(coll.docs)
-          end
+      collections.each do |label, coll|
+        if to_render.include?(label)
+          docs = docs.merge(coll.docs)
         end
       end
       docs

@@ -16,7 +16,6 @@ def file_content_from_hash(input_hash)
 EOF
 end
 
-
 Before do
   FileUtils.mkdir_p(TEST_DIR) unless File.exists?(TEST_DIR)
   Dir.chdir(TEST_DIR)
@@ -24,7 +23,7 @@ end
 
 After do
   FileUtils.rm_rf(TEST_DIR)   if File.exists?(TEST_DIR)
-  FileUtils.rm(JEKYLL_COMMAND_OUTPUT_FILE)
+  FileUtils.rm(JEKYLL_COMMAND_OUTPUT_FILE) if File.exists?(JEKYLL_COMMAND_OUTPUT_FILE)
 end
 
 World(Test::Unit::Assertions)
@@ -130,6 +129,15 @@ Given /^I have a configuration file with "([^\"]*)" set to:$/ do |key, table|
   end
 end
 
+Given /^I have fixture collections$/ do
+  FileUtils.cp_r File.join(JEKYLL_SOURCE_DIR, "test", "source", "_methods"), source_dir
+end
+
+##################
+#
+# Changing stuff
+#
+##################
 
 When /^I run jekyll$/ do
   run_jekyll_build
